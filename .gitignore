@@ -1,21 +1,16 @@
-# Binaries
-axis
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+# Backend
+backend/node_modules/
+backend/dist/
+backend/axis
+backend/*.log
 
-# Test binary
-*.test
+# Dashboard
+dashboard/node_modules/
+dashboard/dist/
+dashboard/build/
+dashboard/*.log
 
-# Output of the go coverage tool
-*.out
-
-# Dependency directories
-vendor/
-
-# IDE
+# Editor
 .idea/
 .vscode/
 *.swp
@@ -25,22 +20,6 @@ vendor/
 .DS_Store
 Thumbs.db
 
-# Build output
-dist/
-build/
-
-# Environment
+# Env
 .env
 .env.local
-
-# Database
-*.db
-*.db-journal
-
-# Logs
-*.log
-logs/
-
-# Temporary
-tmp/
-temp/
