@@ -1,0 +1,182 @@
+# Axis Gateway Configuration
+# Copy this file to axis.yaml and customize
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: 60s
+  write_timeout: 120s
+  idle_timeout: 120s
+  max_connections: 10000
+
+database:
+  # SQLite for development, PostgreSQL for production
+  url: "sqlite://./axis.db"
+  # For PostgreSQL:
+  # url: "postgres://user:pass@host:5432/axis"
+  max_open_conns: 25
+  max_idle_conns: 5
+
+cache:
+  # Built-in in-memory LRU cache (always available)
+  lru:
+    enabled: true
+    max_entries: 100000
+    ttl: 1h
+  # Semantic cache (requires Qdrant or Pgvector)
+  semantic:
+    enabled: false
+    provider: "qdrant"
+    url: "http://localhost:6333"
+    collection: "axis_cache"
+    similarity_threshold: 0.92
+    ttl: 168h
+    max_cost_saving: 0.001
+
+providers:
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    base_url: "https://api.openai.com/v1"
+    timeout: 60s
+    max_retries: 3
+    retry_delay: 500ms
+    connection_pool_size: 100
+
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    base_url: "https://api.anthropic.com/v1"
+    timeout: 120s
+    max_retries: 3
+    retry_delay: 500ms
+    connection_pool_size: 50
+
+  google:
+    api_key: "${GOOGLE_API_KEY}"
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  ollama:
+    api_key: "ollama"
+    base_url: "http://localhost:11434/v1"
+    timeout: 300s
+    max_retries: 1
+    connection_pool_size: 10
+
+routing:
+  # Default chain when no hint specified
+  default_chain: "reliable-balanced"
+  
+  chains:
+    # Balanced reliability and cost
+    reliable-balanced:
+      - model: "gpt-4o-mini"
+        provider: "openai"
+        max_latency_ms: 3000
+        max_retries: 2
+        weight: 1
+      - model: "claude-3-5-haiku"
+        provider: "anthropic"
+        max_latency_ms: 4000
+        max_retries: 2
+        weight: 1
+      - model: "gemini-1.5-flash"
+        provider: "google"
+        max_latency_ms: 5000
+        max_retries: 2
+        weight: 1
+
+    # Best quality, higher cost
+    quality-first:
+      - model: "claude-3-5-sonnet"
+        provider: "anthropic"
+        max_latency_ms: 15000
+        max_retries: 3
+      - model: "gpt-4o"
+        provider: "openai"
+        max_latency_ms: 15000
+        max_retries: 3
+
+    # Lowest cost options
+    cost-conscious:
+      - model: "llama3.3-70b-instruct"
+        provider: "ollama"
+        max_latency_ms: 8000
+        max_retries: 2
+      - model: "gpt-4o-mini"
+        provider: "openai"
+        max_latency_ms: 2000
+        max_retries: 2
+
+    # Fast local models
+    fast-local:
+      - model: "llama3.3"
+        provider: "ollama"
+        max_latency_ms: 5000
+        max_retries: 1
+      - model: "qwen2.5-72b-instruct"
+        provider: "ollama"
+        max_latency_ms: 8000
+        max_retries: 1
+
+  # Health-based routing
+  health:
+    enabled: true
+    window: 300s
+    error_threshold: 0.05
+    latency_threshold_ms: 5000
+
+  # Latency-aware load balancing
+  latency:
+    enabled: true
+    p99_threshold_ms: 5000
+    sample_size: 100
+
+keys:
+  bootstrap_key: "${AXIS_BOOTSTRAP_KEY}"
+  storage: "database"
+  max_per_org: 100
+
+rate_limits:
+  default_rpm: 1000
+  default_tpm: 10000000
+  enforce_on_streaming: true
+  queue_requests: false
+  queue_timeout: 5000ms
+
+costs:
+  # Cost per 1M tokens (input, output)
+  models:
+    gpt-4o:         { input: 2.50, output: 10.00 }
+    gpt-4o-mini:   { input: 0.15, output: 0.60 }
+    gpt-4-turbo:   { input: 10.00, output: 30.00 }
+    gpt-3.5-turbo: { input: 0.50, output: 1.50 }
+    claude-3-5-sonnet: { input: 3.00, output: 15.00 }
+    claude-3-5-haiku:  { input: 0.80, output: 4.00 }
+    gemini-1.5-pro:    { input: 1.25, output: 5.00 }
+    gemini-1.5-flash:  { input: 0.075, output: 0.30 }
+    # Local models are free
+    llama3.3:           { input: 0, output: 0 }
+    llama3.2:           { input: 0, output: 0 }
+
+telemetry:
+  log_requests: true
+  log_responses: false
+  async: true
+  
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  
+  opentelemetry:
+    enabled: false
+    otlp_endpoint: "http://localhost:4317"
+    service_name: "axis-gateway"
+    sampling_ratio: 1.0
+
+  tracing:
+    sample_rate: 0.1
+    include_request_body: false
+    include_response_body: false
