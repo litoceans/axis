@@ -18,6 +18,33 @@ type AnthropicProvider struct {
 	client *http.Client
 }
 
+// AnthropicModels lists current Anthropic models (2025-2026)
+var AnthropicModels = []ModelInfo{
+	// Claude 3.7 Series (February 2025)
+	{ID: "claude-3-7-sonnet-20250219", Name: "Claude 3.7 Sonnet", ContextWindow: 200000, MaxOutputTokens: 64000, InputPriceUSD: 3.00, OutputPriceUSD: 15.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-01"},
+	{ID: "claude-3-7-sonnet-latest", Name: "Claude 3.7 Sonnet Latest", ContextWindow: 200000, MaxOutputTokens: 64000, InputPriceUSD: 3.00, OutputPriceUSD: 15.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-01"},
+	
+	// Claude 3.5 Series (Late 2024/2025)
+	{ID: "claude-3-5-sonnet-20241022", Name: "Claude 3.5 Sonnet v2", ContextWindow: 200000, MaxOutputTokens: 64000, InputPriceUSD: 3.00, OutputPriceUSD: 15.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2024-07"},
+	{ID: "claude-3-5-sonnet-latest", Name: "Claude 3.5 Sonnet Latest", ContextWindow: 200000, MaxOutputTokens: 64000, InputPriceUSD: 3.00, OutputPriceUSD: 15.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2024-07"},
+	{ID: "claude-3-5-haiku-20241022", Name: "Claude 3.5 Haiku", ContextWindow: 200000, MaxOutputTokens: 64000, InputPriceUSD: 0.80, OutputPriceUSD: 4.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2024-07"},
+	{ID: "claude-3-5-haiku-latest", Name: "Claude 3.5 Haiku Latest", ContextWindow: 200000, MaxOutputTokens: 64000, InputPriceUSD: 0.80, OutputPriceUSD: 4.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2024-07"},
+	
+	// Claude 3 Opus (Legacy but still available)
+	{ID: "claude-3-opus-20240229", Name: "Claude 3 Opus", ContextWindow: 200000, MaxOutputTokens: 64000, InputPriceUSD: 15.00, OutputPriceUSD: 75.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2023-08"},
+	{ID: "claude-3-opus-latest", Name: "Claude 3 Opus Latest", ContextWindow: 200000, MaxOutputTokens: 64000, InputPriceUSD: 15.00, OutputPriceUSD: 75.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2023-08"},
+	
+	// Claude 4 Series (Mid 2025)
+	{ID: "claude-4-opus-20250601", Name: "Claude 4 Opus", ContextWindow: 256000, MaxOutputTokens: 128000, InputPriceUSD: 15.00, OutputPriceUSD: 75.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-05"},
+	{ID: "claude-4-opus-latest", Name: "Claude 4 Opus Latest", ContextWindow: 256000, MaxOutputTokens: 128000, InputPriceUSD: 15.00, OutputPriceUSD: 75.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-05"},
+	{ID: "claude-4-sonnet-20250601", Name: "Claude 4 Sonnet", ContextWindow: 256000, MaxOutputTokens: 128000, InputPriceUSD: 3.00, OutputPriceUSD: 15.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-05"},
+	{ID: "claude-4-sonnet-latest", Name: "Claude 4 Sonnet Latest", ContextWindow: 256000, MaxOutputTokens: 128000, InputPriceUSD: 3.00, OutputPriceUSD: 15.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-05"},
+	
+	// Claude 4.6 Series (Early 2026)
+	{ID: "claude-4-6-opus-20260115", Name: "Claude 4.6 Opus", ContextWindow: 256000, MaxOutputTokens: 128000, InputPriceUSD: 15.00, OutputPriceUSD: 75.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-12"},
+	{ID: "claude-4-6-sonnet-20260115", Name: "Claude 4.6 Sonnet", ContextWindow: 256000, MaxOutputTokens: 128000, InputPriceUSD: 3.00, OutputPriceUSD: 15.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-12"},
+}
+
 // NewAnthropicProvider creates a new Anthropic provider
 func NewAnthropicProvider(apiKey, baseURL string, timeout time.Duration, maxRetries int) *AnthropicProvider {
 	return &AnthropicProvider{
@@ -34,17 +61,22 @@ func NewAnthropicProvider(apiKey, baseURL string, timeout time.Duration, maxRetr
 	}
 }
 
+// GetModels returns the list of available Anthropic models
+func (p *AnthropicProvider) GetModels() []ModelInfo {
+	return AnthropicModels
+}
+
 // Anthropic has a different API format - convert to their format
 func convertToAnthropicFormat(req types.ChatRequest) map[string]interface{} {
 	// Extract system message if present
 	var systemPrompt string
-	var messages []map[string]string
+	var messages []map[string]interface{}
 	
 	for _, msg := range req.Messages {
 		if msg.Role == "system" {
 			systemPrompt = msg.Content
 		} else {
-			messages = append(messages, map[string]string{
+			messages = append(messages, map[string]interface{}{
 				"role":    msg.Role,
 				"content": msg.Content,
 			})

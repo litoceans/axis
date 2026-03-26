@@ -256,35 +256,51 @@ func getConfigDuration(key string, defaultVal time.Duration) time.Duration {
 func getConfigChains() map[string][]types.ChainStep {
 	chains := make(map[string][]types.ChainStep)
 
-	// Reliable balanced chain
+	// Reliable balanced chain (current models)
 	chains["reliable-balanced"] = []types.ChainStep{
-		{Model: "gpt-4o-mini", Provider: "openai", MaxLatencyMs: 3000, MaxRetries: 2, Weight: 1, MaxContextTokens: 128000},
-		{Model: "claude-3-5-haiku", Provider: "anthropic", MaxLatencyMs: 4000, MaxRetries: 2, Weight: 1, MaxContextTokens: 200000},
-		{Model: "gemini-1.5-flash", Provider: "google", MaxLatencyMs: 5000, MaxRetries: 2, Weight: 1, MaxContextTokens: 1000000},
+		{Model: "gpt-4.1-mini", Provider: "openai", MaxLatencyMs: 3000, MaxRetries: 2, Weight: 1, MaxContextTokens: 1048576},
+		{Model: "claude-3-5-haiku-latest", Provider: "anthropic", MaxLatencyMs: 4000, MaxRetries: 2, Weight: 1, MaxContextTokens: 200000},
+		{Model: "gemini-2.0-flash", Provider: "google", MaxLatencyMs: 5000, MaxRetries: 2, Weight: 1, MaxContextTokens: 1048576},
 	}
 
-	// Quality first chain
+	// Quality first chain (current models)
 	chains["quality-first"] = []types.ChainStep{
-		{Model: "claude-3-5-sonnet", Provider: "anthropic", MaxLatencyMs: 15000, MaxRetries: 3, MaxContextTokens: 200000},
-		{Model: "gpt-4o", Provider: "openai", MaxLatencyMs: 15000, MaxRetries: 3, MaxContextTokens: 128000},
+		{Model: "claude-4-6-opus-latest", Provider: "anthropic", MaxLatencyMs: 15000, MaxRetries: 3, MaxContextTokens: 256000},
+		{Model: "gpt-5.4", Provider: "openai", MaxLatencyMs: 15000, MaxRetries: 3, MaxContextTokens: 400000},
+		{Model: "gemini-3.0-pro", Provider: "google", MaxLatencyMs: 15000, MaxRetries: 3, MaxContextTokens: 4194304},
 	}
 
-	// Cost conscious chain
+	// Cost conscious chain (current models)
 	chains["cost-conscious"] = []types.ChainStep{
 		{Model: "llama3.3-70b-instruct", Provider: "ollama", MaxLatencyMs: 8000, MaxRetries: 2, MaxContextTokens: 128000},
-		{Model: "gpt-4o-mini", Provider: "openai", MaxLatencyMs: 2000, MaxRetries: 2, MaxContextTokens: 128000},
+		{Model: "gpt-4.1-nano", Provider: "openai", MaxLatencyMs: 2000, MaxRetries: 2, MaxContextTokens: 1048576},
+		{Model: "deepseek-v3", Provider: "deepseek", MaxLatencyMs: 5000, MaxRetries: 2, MaxContextTokens: 128000},
 	}
 
-	// Fast local chain
+	// Fast local chain (current models)
 	chains["fast-local"] = []types.ChainStep{
 		{Model: "llama3.3", Provider: "ollama", MaxLatencyMs: 5000, MaxRetries: 1, MaxContextTokens: 128000},
-		{Model: "qwen2.5-72b-instruct", Provider: "ollama", MaxLatencyMs: 8000, MaxRetries: 1, MaxContextTokens: 128000},
+		{Model: "qwen3-72b", Provider: "ollama", MaxLatencyMs: 8000, MaxRetries: 1, MaxContextTokens: 256000},
+	}
+
+	// Asia-Pacific chain (new providers)
+	chains["asia-pacific"] = []types.ChainStep{
+		{Model: "kimi-k2.5", Provider: "moonshot", MaxLatencyMs: 5000, MaxRetries: 2, MaxContextTokens: 262144},
+		{Model: "minimax-m2.7", Provider: "minimax", MaxLatencyMs: 5000, MaxRetries: 2, MaxContextTokens: 256000},
+		{Model: "deepseek-v3.5", Provider: "deepseek", MaxLatencyMs: 5000, MaxRetries: 2, MaxContextTokens: 256000},
+	}
+
+	// Ultra-fast chain (Groq)
+	chains["ultra-fast"] = []types.ChainStep{
+		{Model: "llama-4-70b", Provider: "groq", MaxLatencyMs: 500, MaxRetries: 2, MaxContextTokens: 128000},
+		{Model: "mixtral-8x7b", Provider: "groq", MaxLatencyMs: 500, MaxRetries: 2, MaxContextTokens: 64000},
 	}
 
 	return chains
 }
 
 func registerProviders(r *router.Router) {
+	// Major Providers
 	// OpenAI
 	openAIProvider := providers.NewOpenAIProvider(
 		os.Getenv("OPENAI_API_KEY"),
@@ -320,4 +336,105 @@ func registerProviders(r *router.Router) {
 		viper.GetInt("providers.ollama.max_retries"),
 	)
 	r.RegisterProvider("ollama", ollamaProvider)
+
+	// New Providers
+	// MiniMax
+	miniMaxProvider := providers.NewMiniMaxProvider(
+		os.Getenv("MINIMAX_API_KEY"),
+		viper.GetString("providers.minimax.base_url"),
+		viper.GetDuration("providers.minimax.timeout"),
+		viper.GetInt("providers.minimax.max_retries"),
+	)
+	r.RegisterProvider("minimax", miniMaxProvider)
+
+	// Moonshot/Kimi
+	moonshotProvider := providers.NewMoonshotProvider(
+		os.Getenv("MOONSHOT_API_KEY"),
+		viper.GetString("providers.moonshot.base_url"),
+		viper.GetDuration("providers.moonshot.timeout"),
+		viper.GetInt("providers.moonshot.max_retries"),
+	)
+	r.RegisterProvider("moonshot", moonshotProvider)
+
+	// DeepSeek
+	deepSeekProvider := providers.NewDeepSeekProvider(
+		os.Getenv("DEEPSEEK_API_KEY"),
+		viper.GetString("providers.deepseek.base_url"),
+		viper.GetDuration("providers.deepseek.timeout"),
+		viper.GetInt("providers.deepseek.max_retries"),
+	)
+	r.RegisterProvider("deepseek", deepSeekProvider)
+
+	// XAI/Grok
+	xaiProvider := providers.NewXAIProvider(
+		os.Getenv("XAI_API_KEY"),
+		viper.GetString("providers.xai.base_url"),
+		viper.GetDuration("providers.xai.timeout"),
+		viper.GetInt("providers.xai.max_retries"),
+	)
+	r.RegisterProvider("xai", xaiProvider)
+
+	// Additional providers (using OpenAI-compatible clients)
+	// Mistral
+	mistralProvider := providers.NewOpenAIProvider(
+		os.Getenv("MISTRAL_API_KEY"),
+		viper.GetString("providers.mistral.base_url"),
+		viper.GetDuration("providers.mistral.timeout"),
+		viper.GetInt("providers.mistral.max_retries"),
+	)
+	r.RegisterProvider("mistral", mistralProvider)
+
+	// Groq
+	groqProvider := providers.NewOpenAIProvider(
+		os.Getenv("GROQ_API_KEY"),
+		viper.GetString("providers.groq.base_url"),
+		viper.GetDuration("providers.groq.timeout"),
+		viper.GetInt("providers.groq.max_retries"),
+	)
+	r.RegisterProvider("groq", groqProvider)
+
+	// Cohere
+	cohereProvider := providers.NewOpenAIProvider(
+		os.Getenv("COHERE_API_KEY"),
+		viper.GetString("providers.cohere.base_url"),
+		viper.GetDuration("providers.cohere.timeout"),
+		viper.GetInt("providers.cohere.max_retries"),
+	)
+	r.RegisterProvider("cohere", cohereProvider)
+
+	// Perplexity
+	perplexityProvider := providers.NewOpenAIProvider(
+		os.Getenv("PERPLEXITY_API_KEY"),
+		viper.GetString("providers.perplexity.base_url"),
+		viper.GetDuration("providers.perplexity.timeout"),
+		viper.GetInt("providers.perplexity.max_retries"),
+	)
+	r.RegisterProvider("perplexity", perplexityProvider)
+
+	// Fireworks
+	fireworksProvider := providers.NewOpenAIProvider(
+		os.Getenv("FIREWORKS_API_KEY"),
+		viper.GetString("providers.fireworks.base_url"),
+		viper.GetDuration("providers.fireworks.timeout"),
+		viper.GetInt("providers.fireworks.max_retries"),
+	)
+	r.RegisterProvider("fireworks", fireworksProvider)
+
+	// Together AI
+	togetherProvider := providers.NewOpenAIProvider(
+		os.Getenv("TOGETHER_API_KEY"),
+		viper.GetString("providers.together.base_url"),
+		viper.GetDuration("providers.together.timeout"),
+		viper.GetInt("providers.together.max_retries"),
+	)
+	r.RegisterProvider("together", togetherProvider)
+
+	// Cerebras
+	cerebrasProvider := providers.NewOpenAIProvider(
+		os.Getenv("CEREBRAS_API_KEY"),
+		viper.GetString("providers.cerebras.base_url"),
+		viper.GetDuration("providers.cerebras.timeout"),
+		viper.GetInt("providers.cerebras.max_retries"),
+	)
+	r.RegisterProvider("cerebras", cerebrasProvider)
 }

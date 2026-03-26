@@ -18,6 +18,31 @@ type GoogleProvider struct {
 	client *http.Client
 }
 
+// GoogleModels lists current Google models (2025-2026)
+var GoogleModels = []ModelInfo{
+	// Gemini 2.0 Series (February 2025)
+	{ID: "gemini-2.0-pro", Name: "Gemini 2.0 Pro", ContextWindow: 2097152, MaxOutputTokens: 65536, InputPriceUSD: 2.50, OutputPriceUSD: 10.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-01"},
+	{ID: "gemini-2.0-pro-exp", Name: "Gemini 2.0 Pro Experimental", ContextWindow: 2097152, MaxOutputTokens: 65536, InputPriceUSD: 0.00, OutputPriceUSD: 0.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-01"},
+	{ID: "gemini-2.0-flash", Name: "Gemini 2.0 Flash", ContextWindow: 1048576, MaxOutputTokens: 65536, InputPriceUSD: 0.10, OutputPriceUSD: 0.40, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-01"},
+	{ID: "gemini-2.0-flash-lite", Name: "Gemini 2.0 Flash Lite", ContextWindow: 1048576, MaxOutputTokens: 65536, InputPriceUSD: 0.075, OutputPriceUSD: 0.30, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-01"},
+	
+	// Gemini 2.5 Series (Late 2025)
+	{ID: "gemini-2.5-pro", Name: "Gemini 2.5 Pro", ContextWindow: 4194304, MaxOutputTokens: 128000, InputPriceUSD: 2.50, OutputPriceUSD: 10.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-09"},
+	{ID: "gemini-2.5-flash", Name: "Gemini 2.5 Flash", ContextWindow: 2097152, MaxOutputTokens: 65536, InputPriceUSD: 0.10, OutputPriceUSD: 0.40, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-09"},
+	
+	// Gemini 3.0 Series (Early 2026)
+	{ID: "gemini-3.0-pro", Name: "Gemini 3.0 Pro", ContextWindow: 4194304, MaxOutputTokens: 128000, InputPriceUSD: 3.00, OutputPriceUSD: 12.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-12"},
+	{ID: "gemini-3.0-flash", Name: "Gemini 3.0 Flash", ContextWindow: 2097152, MaxOutputTokens: 65536, InputPriceUSD: 0.15, OutputPriceUSD: 0.60, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-12"},
+	
+	// Legacy Gemini 1.5 (Still available but deprecated)
+	{ID: "gemini-1.5-pro", Name: "Gemini 1.5 Pro", ContextWindow: 2097152, MaxOutputTokens: 65536, InputPriceUSD: 1.25, OutputPriceUSD: 5.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2024-07"},
+	{ID: "gemini-1.5-flash", Name: "Gemini 1.5 Flash", ContextWindow: 1048576, MaxOutputTokens: 65536, InputPriceUSD: 0.075, OutputPriceUSD: 0.30, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2024-07"},
+	
+	// Embedding Models
+	{ID: "text-embedding-004", Name: "Text Embedding 004", ContextWindow: 2048, MaxOutputTokens: 2048, InputPriceUSD: 0.10, OutputPriceUSD: 0.00, SupportsVision: false, SupportsFunction: false, KnowledgeCutoff: "2024-01"},
+	{ID: "text-embedding-005", Name: "Text Embedding 005", ContextWindow: 8192, MaxOutputTokens: 8192, InputPriceUSD: 0.10, OutputPriceUSD: 0.00, SupportsVision: false, SupportsFunction: false, KnowledgeCutoff: "2025-01"},
+}
+
 // NewGoogleProvider creates a new Google AI provider
 func NewGoogleProvider(apiKey, baseURL string, timeout time.Duration, maxRetries int) *GoogleProvider {
 	return &GoogleProvider{
@@ -32,6 +57,11 @@ func NewGoogleProvider(apiKey, baseURL string, timeout time.Duration, maxRetries
 			Timeout: timeout,
 		},
 	}
+}
+
+// GetModels returns the list of available Google models
+func (p *GoogleProvider) GetModels() []ModelInfo {
+	return GoogleModels
 }
 
 // Chat performs a chat completion request
@@ -57,13 +87,6 @@ func (p *GoogleProvider) Chat(ctx context.Context, req types.ChatRequest) (*type
 	
 	// Map model name to Google format
 	modelPath := req.Model
-	if req.Model == "gemini-1.5-pro" {
-		modelPath = "gemini-1.5-pro"
-	} else if req.Model == "gemini-1.5-flash" {
-		modelPath = "gemini-1.5-flash"
-	} else if req.Model == "gemini-2.0-flash" {
-		modelPath = "gemini-2.0-flash"
-	}
 	
 	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", p.BaseURL, modelPath, p.APIKey)
 	
@@ -168,13 +191,6 @@ func (p *GoogleProvider) ChatStream(ctx context.Context, req types.ChatRequest) 
 		}
 		
 		modelPath := req.Model
-		if req.Model == "gemini-1.5-pro" {
-			modelPath = "gemini-1.5-pro"
-		} else if req.Model == "gemini-1.5-flash" {
-			modelPath = "gemini-1.5-flash"
-		} else if req.Model == "gemini-2.0-flash" {
-			modelPath = "gemini-2.0-flash"
-		}
 		
 		url := fmt.Sprintf("%s/models/%s:streamGenerateContent?key=%s&alt=sse", p.BaseURL, modelPath, p.APIKey)
 		
@@ -276,8 +292,8 @@ func (p *GoogleProvider) Embed(ctx context.Context, req types.EmbedRequest) (*ty
 	}
 	
 	modelPath := "text-embedding-004"
-	if req.Model == "embedding-001" {
-		modelPath = "embedding-001"
+	if req.Model == "text-embedding-005" {
+		modelPath = "text-embedding-005"
 	}
 	
 	url := fmt.Sprintf("%s/models/%s:embedContent?key=%s", p.BaseURL, modelPath, p.APIKey)

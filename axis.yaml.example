@@ -34,6 +34,7 @@ cache:
     max_cost_saving: 0.001
 
 providers:
+  # Major Providers
   openai:
     api_key: "${OPENAI_API_KEY}"
     base_url: "https://api.openai.com/v1"
@@ -64,6 +65,84 @@ providers:
     max_retries: 1
     connection_pool_size: 10
 
+  # New Providers
+  minimax:
+    api_key: "${MINIMAX_API_KEY}"
+    base_url: "https://api.minimax.io/v1"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  moonshot:
+    api_key: "${MOONSHOT_API_KEY}"
+    base_url: "https://api.moonshot.cn/v1"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  deepseek:
+    api_key: "${DEEPSEEK_API_KEY}"
+    base_url: "https://api.deepseek.com/v1"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  xai:
+    api_key: "${XAI_API_KEY}"
+    base_url: "https://api.x.ai/v1"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  mistral:
+    api_key: "${MISTRAL_API_KEY}"
+    base_url: "https://api.mistral.ai/v1"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  groq:
+    api_key: "${GROQ_API_KEY}"
+    base_url: "https://api.groq.com/openai/v1"
+    timeout: 30s
+    max_retries: 3
+    connection_pool_size: 100
+
+  cohere:
+    api_key: "${COHERE_API_KEY}"
+    base_url: "https://api.cohere.ai/v1"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  perplexity:
+    api_key: "${PERPLEXITY_API_KEY}"
+    base_url: "https://api.perplexity.ai"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  fireworks:
+    api_key: "${FIREWORKS_API_KEY}"
+    base_url: "https://api.fireworks.ai/inference/v1"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  together:
+    api_key: "${TOGETHER_API_KEY}"
+    base_url: "https://api.together.xyz/v1"
+    timeout: 60s
+    max_retries: 3
+    connection_pool_size: 50
+
+  cerebras:
+    api_key: "${CEREBRAS_API_KEY}"
+    base_url: "https://api.cerebras.ai/v1"
+    timeout: 30s
+    max_retries: 3
+    connection_pool_size: 100
+
 routing:
   # Default chain when no hint specified
   default_chain: "reliable-balanced"
@@ -71,17 +150,17 @@ routing:
   chains:
     # Balanced reliability and cost
     reliable-balanced:
-      - model: "gpt-4o-mini"
+      - model: "gpt-4.1-mini"
         provider: "openai"
         max_latency_ms: 3000
         max_retries: 2
         weight: 1
-      - model: "claude-3-5-haiku"
+      - model: "claude-3-5-haiku-latest"
         provider: "anthropic"
         max_latency_ms: 4000
         max_retries: 2
         weight: 1
-      - model: "gemini-1.5-flash"
+      - model: "gemini-2.0-flash"
         provider: "google"
         max_latency_ms: 5000
         max_retries: 2
@@ -89,12 +168,16 @@ routing:
 
     # Best quality, higher cost
     quality-first:
-      - model: "claude-3-5-sonnet"
+      - model: "claude-4-6-opus-latest"
         provider: "anthropic"
         max_latency_ms: 15000
         max_retries: 3
-      - model: "gpt-4o"
+      - model: "gpt-5.4"
         provider: "openai"
+        max_latency_ms: 15000
+        max_retries: 3
+      - model: "gemini-3.0-pro"
+        provider: "google"
         max_latency_ms: 15000
         max_retries: 3
 
@@ -104,9 +187,13 @@ routing:
         provider: "ollama"
         max_latency_ms: 8000
         max_retries: 2
-      - model: "gpt-4o-mini"
+      - model: "gpt-4.1-nano"
         provider: "openai"
         max_latency_ms: 2000
+        max_retries: 2
+      - model: "deepseek-v3"
+        provider: "deepseek"
+        max_latency_ms: 5000
         max_retries: 2
 
     # Fast local models
@@ -115,10 +202,36 @@ routing:
         provider: "ollama"
         max_latency_ms: 5000
         max_retries: 1
-      - model: "qwen2.5-72b-instruct"
+      - model: "qwen3-72b"
         provider: "ollama"
         max_latency_ms: 8000
         max_retries: 1
+
+    # Asian providers (low latency for Asia-Pacific)
+    asia-pacific:
+      - model: "kimi-k2.5"
+        provider: "moonshot"
+        max_latency_ms: 5000
+        max_retries: 2
+      - model: "minimax-m2.7"
+        provider: "minimax"
+        max_latency_ms: 5000
+        max_retries: 2
+      - model: "deepseek-v3.5"
+        provider: "deepseek"
+        max_latency_ms: 5000
+        max_retries: 2
+
+    # Ultra-fast inference (Groq)
+    ultra-fast:
+      - model: "llama-4-70b"
+        provider: "groq"
+        max_latency_ms: 500
+        max_retries: 2
+      - model: "mixtral-8x7b"
+        provider: "groq"
+        max_latency_ms: 500
+        max_retries: 2
 
   # Health-based routing
   health:
@@ -148,17 +261,56 @@ rate_limits:
 costs:
   # Cost per 1M tokens (input, output)
   models:
-    gpt-4o:         { input: 2.50, output: 10.00 }
-    gpt-4o-mini:   { input: 0.15, output: 0.60 }
-    gpt-4-turbo:   { input: 10.00, output: 30.00 }
-    gpt-3.5-turbo: { input: 0.50, output: 1.50 }
-    claude-3-5-sonnet: { input: 3.00, output: 15.00 }
-    claude-3-5-haiku:  { input: 0.80, output: 4.00 }
-    gemini-1.5-pro:    { input: 1.25, output: 5.00 }
-    gemini-1.5-flash:  { input: 0.075, output: 0.30 }
-    # Local models are free
-    llama3.3:           { input: 0, output: 0 }
-    llama3.2:           { input: 0, output: 0 }
+    # OpenAI
+    gpt-5.4:              { input: 5.00, output: 20.00 }
+    gpt-5.4-mini:         { input: 1.00, output: 4.00 }
+    gpt-5:                { input: 5.00, output: 20.00 }
+    gpt-4.1:              { input: 2.00, output: 8.00 }
+    gpt-4.1-mini:         { input: 0.40, output: 1.60 }
+    gpt-4.1-nano:         { input: 0.10, output: 0.40 }
+    o4-mini:              { input: 1.10, output: 4.40 }
+    o3:                   { input: 10.00, output: 40.00 }
+    
+    # Anthropic
+    claude-4-6-opus:      { input: 15.00, output: 75.00 }
+    claude-4-6-sonnet:    { input: 3.00, output: 15.00 }
+    claude-4-opus:        { input: 15.00, output: 75.00 }
+    claude-4-sonnet:      { input: 3.00, output: 15.00 }
+    claude-3-7-sonnet:    { input: 3.00, output: 15.00 }
+    claude-3-5-haiku:     { input: 0.80, output: 4.00 }
+    
+    # Google
+    gemini-3.0-pro:       { input: 3.00, output: 12.00 }
+    gemini-3.0-flash:     { input: 0.15, output: 0.60 }
+    gemini-2.5-pro:       { input: 2.50, output: 10.00 }
+    gemini-2.5-flash:     { input: 0.10, output: 0.40 }
+    gemini-2.0-pro:       { input: 2.50, output: 10.00 }
+    gemini-2.0-flash:     { input: 0.10, output: 0.40 }
+    
+    # MiniMax
+    minimax-m2.7:         { input: 0.40, output: 1.60 }
+    minimax-m2.5:         { input: 0.30, output: 1.20 }
+    minimax-m2:           { input: 0.20, output: 0.80 }
+    
+    # Moonshot/Kimi
+    kimi-k2.5:            { input: 0.60, output: 2.40 }
+    kimi-k2:              { input: 0.60, output: 2.40 }
+    
+    # DeepSeek
+    deepseek-v3.5:        { input: 0.40, output: 1.60 }
+    deepseek-v3:          { input: 0.27, output: 1.10 }
+    deepseek-r1:          { input: 0.55, output: 2.19 }
+    
+    # XAI/Grok
+    grok-4:               { input: 8.00, output: 24.00 }
+    grok-3:               { input: 6.00, output: 18.00 }
+    grok-2:               { input: 5.00, output: 15.00 }
+    
+    # Local models (free)
+    llama4:               { input: 0, output: 0 }
+    llama3.3:             { input: 0, output: 0 }
+    qwen3:                { input: 0, output: 0 }
+    deepseek-v3:          { input: 0, output: 0 }
 
 telemetry:
   log_requests: true

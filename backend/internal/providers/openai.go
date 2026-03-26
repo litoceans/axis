@@ -18,6 +18,50 @@ type OpenAIProvider struct {
 	client *http.Client
 }
 
+// ModelInfo represents model metadata
+type ModelInfo struct {
+	ID               string  `json:"id"`
+	Name             string  `json:"name"`
+	ContextWindow    int     `json:"context_window"`
+	MaxOutputTokens  int     `json:"max_output_tokens"`
+	InputPriceUSD    float64 `json:"input_price_usd"`  // per 1M tokens
+	OutputPriceUSD   float64 `json:"output_price_usd"` // per 1M tokens
+	SupportsVision   bool    `json:"supports_vision"`
+	SupportsFunction bool    `json:"supports_function"`
+	KnowledgeCutoff  string  `json:"knowledge_cutoff"`
+}
+
+// OpenAIModels lists current OpenAI models (2025-2026)
+var OpenAIModels = []ModelInfo{
+	// GPT-4.1 Series (April 2025)
+	{ID: "gpt-4.1", Name: "GPT-4.1", ContextWindow: 1048576, MaxOutputTokens: 32768, InputPriceUSD: 2.00, OutputPriceUSD: 8.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-03"},
+	{ID: "gpt-4.1-mini", Name: "GPT-4.1 Mini", ContextWindow: 1048576, MaxOutputTokens: 32768, InputPriceUSD: 0.40, OutputPriceUSD: 1.60, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-03"},
+	{ID: "gpt-4.1-nano", Name: "GPT-4.1 Nano", ContextWindow: 1048576, MaxOutputTokens: 32768, InputPriceUSD: 0.10, OutputPriceUSD: 0.40, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-03"},
+	
+	// GPT-4o 2025 Series
+	{ID: "gpt-4o-2025", Name: "GPT-4o 2025", ContextWindow: 128000, MaxOutputTokens: 16384, InputPriceUSD: 2.50, OutputPriceUSD: 10.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-01"},
+	{ID: "gpt-4o-mini-2025", Name: "GPT-4o Mini 2025", ContextWindow: 128000, MaxOutputTokens: 16384, InputPriceUSD: 0.15, OutputPriceUSD: 0.60, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-01"},
+	
+	// o3/o4 Reasoning Series (April 2025)
+	{ID: "o3", Name: "o3", ContextWindow: 200000, MaxOutputTokens: 100000, InputPriceUSD: 10.00, OutputPriceUSD: 40.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-03"},
+	{ID: "o3-mini", Name: "o3 Mini", ContextWindow: 200000, MaxOutputTokens: 100000, InputPriceUSD: 1.10, OutputPriceUSD: 4.40, SupportsVision: false, SupportsFunction: true, KnowledgeCutoff: "2025-03"},
+	{ID: "o4-mini", Name: "o4 Mini", ContextWindow: 200000, MaxOutputTokens: 100000, InputPriceUSD: 1.10, OutputPriceUSD: 4.40, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-03"},
+	{ID: "o3-pro", Name: "o3 Pro", ContextWindow: 200000, MaxOutputTokens: 100000, InputPriceUSD: 15.00, OutputPriceUSD: 60.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-03"},
+	
+	// GPT-5 Series (Late 2025/Early 2026)
+	{ID: "gpt-5", Name: "GPT-5", ContextWindow: 400000, MaxOutputTokens: 128000, InputPriceUSD: 5.00, OutputPriceUSD: 20.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-09"},
+	{ID: "gpt-5-mini", Name: "GPT-5 Mini", ContextWindow: 400000, MaxOutputTokens: 128000, InputPriceUSD: 1.00, OutputPriceUSD: 4.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-09"},
+	{ID: "gpt-5-nano", Name: "GPT-5 Nano", ContextWindow: 400000, MaxOutputTokens: 128000, InputPriceUSD: 0.25, OutputPriceUSD: 1.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2025-09"},
+	
+	// GPT-5.4 Series (March 2026)
+	{ID: "gpt-5.4", Name: "GPT-5.4", ContextWindow: 400000, MaxOutputTokens: 128000, InputPriceUSD: 5.00, OutputPriceUSD: 20.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2026-02"},
+	{ID: "gpt-5.4-mini", Name: "GPT-5.4 Mini", ContextWindow: 400000, MaxOutputTokens: 128000, InputPriceUSD: 1.00, OutputPriceUSD: 4.00, SupportsVision: true, SupportsFunction: true, KnowledgeCutoff: "2026-02"},
+	
+	// Embedding Models
+	{ID: "text-embedding-3-small", Name: "Text Embedding 3 Small", ContextWindow: 8191, MaxOutputTokens: 8191, InputPriceUSD: 0.02, OutputPriceUSD: 0.00, SupportsVision: false, SupportsFunction: false, KnowledgeCutoff: "2024-01"},
+	{ID: "text-embedding-3-large", Name: "Text Embedding 3 Large", ContextWindow: 8191, MaxOutputTokens: 8191, InputPriceUSD: 0.13, OutputPriceUSD: 0.00, SupportsVision: false, SupportsFunction: false, KnowledgeCutoff: "2024-01"},
+}
+
 // NewOpenAIProvider creates a new OpenAI provider
 func NewOpenAIProvider(apiKey, baseURL string, timeout time.Duration, maxRetries int) *OpenAIProvider {
 	return &OpenAIProvider{
@@ -32,6 +76,11 @@ func NewOpenAIProvider(apiKey, baseURL string, timeout time.Duration, maxRetries
 			Timeout: timeout,
 		},
 	}
+}
+
+// GetModels returns the list of available OpenAI models
+func (p *OpenAIProvider) GetModels() []ModelInfo {
+	return OpenAIModels
 }
 
 // Chat performs a chat completion request

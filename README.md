@@ -6,6 +6,32 @@
 
 Axis is a high-performance LLM gateway written in Go that routes requests across every major AI provider through a single unified OpenAI-compatible API.
 
+## Quick Start
+
+### Linux/macOS
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/litoceans/axis/main/scripts/install.sh | bash
+```
+
+### Windows
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercontent.com/litoceans/axis/main/scripts/install-windows.ps1 | iex"
+```
+
+### Docker
+
+```bash
+docker run -p 8080:8080 -v ./axis-data:/data litoceans/axis:latest
+```
+
+Or with Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
 ## Features
 
 - **🚀 High Performance** - Built in Go for sub-millisecond routing overhead and instant cold starts
@@ -17,40 +43,27 @@ Axis is a high-performance LLM gateway written in Go that routes requests across
 - **🔐 API Key Management** - Secure key storage with SHA-256 hashing
 - **🏥 Health Monitoring** - Real-time provider health scoring with automatic deprioritization
 
-## Quick Start
+## Supported Providers
 
-### Docker
+| Provider | Chat Models | Embeddings |
+|----------|-------------|------------|
+| **OpenAI** | GPT-5.4, GPT-5, GPT-4.1, o4-mini, o3 | text-embedding-3-small, text-embedding-3-large |
+| **Anthropic** | Claude 4.6, Claude 4, Claude 3.7 | - |
+| **Google** | Gemini 3.0, Gemini 2.5, Gemini 2.0 | text-embedding-004, text-embedding-005 |
+| **Ollama** | Llama 4, Llama 3.3, Qwen 3, DeepSeek V3, Mistral | nomic-embed-text, mxbai-embed-large |
+| **MiniMax** | MiniMax M2.7, M2.5, M2, VL 2 | - |
+| **Moonshot** | Kimi K2.5, Kimi K2, Kimi VL | - |
+| **DeepSeek** | DeepSeek V3.5, V3, R1, Coder V2.5 | - |
+| **XAI/Grok** | Grok-4, Grok-3, Grok-2 | - |
+| **Mistral** | Mistral Large 2, Small 3, Codestral | - |
+| **Groq** | Llama 4, Mixtral, Gemma 2 | - |
+| **Cohere** | Command R+, Command A | - |
+| **Perplexity** | Sonar Pro, Sonar Small | - |
+| **Fireworks** | Hosted Llama, Qwen, Mistral | - |
+| **Together AI** | Hosted Llama, Qwen, Mistral | - |
+| **Cerebras** | Llama 4 on Cerebras | - |
 
-```bash
-# Pull and run
-docker run -d \
-  --name axis \
-  -p 8080:8080 \
-  -p 9090:9090 \
-  -v $(pwd)/axis.yaml:/etc/axis/axis.yaml \
-  -e OPENAI_API_KEY=sk-... \
-  -e ANTHROPIC_API_KEY=sk-ant-... \
-  axis-gateway/axis:latest
-
-# Or build your own
-docker build -t axis .
-```
-
-### Binary
-
-```bash
-# Download release
-wget https://releases.axis-gateway.dev/axis_1.0.0_linux_amd64.tar.gz
-tar -xzf axis_1.0.0_linux_amd64.tar.gz
-chmod +x axis
-
-# Configure
-cp axis.yaml.example axis.yaml
-nano axis.yaml  # Add your API keys
-
-# Run
-./axis serve
-```
+**150+ models total** across all providers.
 
 ## Configuration
 
@@ -66,15 +79,27 @@ providers:
     api_key: "${OPENAI_API_KEY}"
   anthropic:
     api_key: "${ANTHROPIC_API_KEY}"
+  google:
+    api_key: "${GOOGLE_API_KEY}"
+  minimax:
+    api_key: "${MINIMAX_API_KEY}"
+  moonshot:
+    api_key: "${MOONSHOT_API_KEY}"
+  deepseek:
+    api_key: "${DEEPSEEK_API_KEY}"
+  xai:
+    api_key: "${XAI_API_KEY}"
 
 routing:
   default_chain: "reliable-balanced"
   chains:
     reliable-balanced:
-      - model: "gpt-4o-mini"
+      - model: "gpt-4.1-mini"
         provider: "openai"
-      - model: "claude-3-5-haiku"
+      - model: "claude-3-5-haiku-latest"
         provider: "anthropic"
+      - model: "gemini-2.0-flash"
+        provider: "google"
 ```
 
 ## API Usage
@@ -90,7 +115,7 @@ curl https://api.openai.com/v1/chat/completions \
 # After (via Axis)
 curl http://localhost:8080/v1/chat/completions \
   -H "Authorization: Bearer $AXIS_API_KEY" \
-  -d '{"model":"gpt-4o","messages":[{"role":"user","content":"Hello"}]}'
+  -d '{"model":"gpt-4.1-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 ### Using Routing Chains
@@ -135,15 +160,6 @@ curl http://localhost:8080/v1/chat/completions \
 │  (usage logs, keys│    │  OpenTelemetry   │
 └──────────────────────┘    └──────────────────┘
 ```
-
-## Supported Providers
-
-| Provider | Chat Models | Embeddings |
-|----------|-------------|------------|
-| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo, o1-preview, o1-mini | text-embedding-3-small, text-embedding-3-large |
-| Anthropic | claude-3-5-sonnet, claude-3-5-haiku, claude-3-opus | - |
-| Google | gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash | text-embedding-004 |
-| Ollama | llama3.3, mistral, qwen2.5, phi4, deepseek-r1 | nomic-embed-text |
 
 ## Endpoints
 
